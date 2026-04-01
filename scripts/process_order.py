@@ -131,6 +131,10 @@ for idx, row_data in df_bk.iterrows():
         if src_cell.alignment:
             dst_cell.alignment = Alignment(horizontal=src_cell.alignment.horizontal, vertical=src_cell.alignment.vertical)
 
+    # 复制行高
+    if src_row_other in ws_other.row_dimensions and ws_other.row_dimensions[src_row_other].height:
+        ws_other.row_dimensions[new_row].height = ws_other.row_dimensions[src_row_other].height
+
 print(f"    已追加 {len(df_bk)} 行")
 
 # 7. 处理"开票销售订单" - 追加非BK数据
@@ -171,6 +175,10 @@ for idx, row_data in df_other.iterrows():
         dst_cell.font = Font(name='宋体', size=src_cell.font.size if src_cell.font else 11)
         if src_cell.alignment:
             dst_cell.alignment = Alignment(horizontal=src_cell.alignment.horizontal, vertical=src_cell.alignment.vertical)
+
+    # 复制行高
+    if src_row_kp in ws_kp.row_dimensions and ws_kp.row_dimensions[src_row_kp].height:
+        ws_kp.row_dimensions[new_row].height = ws_kp.row_dimensions[src_row_kp].height
 
 print(f"    已追加 {len(df_other)} 行")
 
