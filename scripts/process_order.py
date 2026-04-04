@@ -59,19 +59,43 @@ print(f"\n[1] 读取源文件: {SOURCE_FILE}")
 df = pd.read_excel(SOURCE_FILE)
 print(f"    源文件总行数: {len(df)}")
 
+# 加载目标文件以获取列名
+print(f"\n    加载目标文件获取列名: {TARGET_FILE}")
+wb = load_workbook(TARGET_FILE)
+ws_target = wb['其他销售订单']  # 随便取一个工作表，列名应该是一样的
+target_cols = [ws_target.cell(1, col).value for col in range(1, 14)]
+
+# 将源文件的列名(前13列)改为目标文件的列名
+if len(df.columns) >= 13:
+    print(f"    将源文件前13列的列名修改为目标文件的列名...")
+    df.columns = target_cols + list(df.columns[13:])
+else:
+    print(f"    ⚠️ 源文件列数小于13，可能无法完全匹配！")
+
+col_date = target_cols[0]      # 订单日期 (A列)
+col_ship = target_cols[1]      # 发货方式 (B列)
+col_customer = target_cols[2]  # 购货单位 (C列)
+col_dept = target_cols[3]      # 部门 (D列)
+col_sales = target_cols[4]     # 业务员 (E列)
+col_product = target_cols[5]   # 产品名称 (F列)
+col_spec = target_cols[6]      # 规格型号 (G列)
+col_qty = target_cols[7]       # 数量 (H列)
+col_unit = target_cols[8]      # 单位 (I列)
+col_price = target_cols[9]     # 含税单价 (J列)
+col_amount = target_cols[10]   # 总金额 (K列)
+col_summary = target_cols[11]  # 摘要 (L列)
+col_orderid = target_cols[12]  # 客户订单号 (M列)
+
+# 配置参数更新，使用目标文件M列的名字
+SKIP_FILL_COLUMNS = [str(col_orderid)]  # 不填充空值的列
+
 # 2. 空值填充
 print("\n[2] 执行空值填充...")
 
-# 检查C1（第3列列名）是否为"购货单位"，如果不是则修改
-if df.columns[2] != '购货单位':
-    old_name = df.columns[2]
-    df.columns = list(df.columns[:2]) + ['购货单位'] + list(df.columns[3:])
-    print(f"    已将第3列列名从 '{old_name}' 改为 '购货单位'")
-
 for col in df.columns:
-    if col.strip() not in [c.strip() for c in SKIP_FILL_COLUMNS]:
+    if str(col).strip() not in [c.strip() for c in SKIP_FILL_COLUMNS]:
         df[col] = df[col].ffill().bfill()
-print("    空值填充完成 (M列'客户订单号'不填充)")
+print(f"    空值填充完成 (M列'{col_orderid}'不填充)")
 
 # 3. 日期格式改为 YYYY/M/D
 print("\n[3] 转换日期格式为 YYYY/M/D...")
@@ -82,19 +106,18 @@ def format_date(val):
         return val.strftime('%Y/%m/%d')
     return val
 
-df['订单日期'] = df['订单日期'].apply(format_date)
+df[col_date] = df[col_date].apply(format_date)
 print("    日期格式转换完成")
 
 # 4. 分离BK和非BK数据
 print("\n[4] 分离数据...")
-df_bk = df[df['购货单位'].astype(str).str.contains(BK_KEYWORD, na=False)].copy()
-df_other = df[~df['购货单位'].astype(str).str.contains(BK_KEYWORD, na=False)].copy()
+df_bk = df[df[col_customer].astype(str).str.contains(BK_KEYWORD, na=False)].copy()
+df_other = df[~df[col_customer].astype(str).str.contains(BK_KEYWORD, na=False)].copy()
 print(f"    BK数据 (追加到'其他销售订单'): {len(df_bk)}行")
 print(f"    其他数据 (追加到'开票销售订单'): {len(df_other)}行")
 
-# 5. 加载目标文件
-print(f"\n[5] 加载目标文件: {TARGET_FILE}")
-wb = load_workbook(TARGET_FILE)
+# 5. 加载目标文件（已在第1步提前加载）
+print(f"\n[5] 准备写入目标文件: {TARGET_FILE}")
 
 # 6. 处理"其他销售订单" - 追加BK数据
 print("\n[6] 处理'其他销售订单'工作表...")
@@ -110,19 +133,19 @@ src_row_other = last_row_other if last_row_other > 1 else 1
 
 for idx, row_data in df_bk.iterrows():
     new_row = last_row_other + 1 + df_bk.index.get_loc(idx)
-    ws_other.cell(new_row, 1).value = row_data['订单日期']
-    ws_other.cell(new_row, 2).value = row_data['发货方式']
-    ws_other.cell(new_row, 3).value = row_data['购货单位']
-    ws_other.cell(new_row, 4).value = row_data['部门']
-    ws_other.cell(new_row, 5).value = row_data['业务员']
-    ws_other.cell(new_row, 6).value = row_data['产品名称']
-    ws_other.cell(new_row, 7).value = row_data['规格型号']
-    ws_other.cell(new_row, 8).value = row_data['数量']
-    ws_other.cell(new_row, 9).value = row_data['单位']
-    ws_other.cell(new_row, 10).value = row_data['含税单价']
-    ws_other.cell(new_row, 11).value = row_data['总金额']
-    ws_other.cell(new_row, 12).value = row_data['摘要']
-    ws_other.cell(new_row, 13).value = row_data['客户订单号']
+    ws_other.cell(new_row, 1).value = row_data[col_date]
+    ws_other.cell(new_row, 2).value = row_data[col_ship]
+    ws_other.cell(new_row, 3).value = row_data[col_customer]
+    ws_other.cell(new_row, 4).value = row_data[col_dept]
+    ws_other.cell(new_row, 5).value = row_data[col_sales]
+    ws_other.cell(new_row, 6).value = row_data[col_product]
+    ws_other.cell(new_row, 7).value = row_data[col_spec]
+    ws_other.cell(new_row, 8).value = row_data[col_qty]
+    ws_other.cell(new_row, 9).value = row_data[col_unit]
+    ws_other.cell(new_row, 10).value = row_data[col_price]
+    ws_other.cell(new_row, 11).value = row_data[col_amount]
+    ws_other.cell(new_row, 12).value = row_data[col_summary]
+    ws_other.cell(new_row, 13).value = row_data[col_orderid]
 
     for col in range(1, 14):
         src_cell = ws_other.cell(src_row_other, col)
@@ -157,19 +180,19 @@ border_style = sample_cell.border.left.style if sample_cell.border and sample_ce
 
 for idx, row_data in df_other.iterrows():
     new_row = last_row_kp + 1 + df_other.index.get_loc(idx)
-    ws_kp.cell(new_row, 1).value = row_data['订单日期']
-    ws_kp.cell(new_row, 2).value = row_data['发货方式']
-    ws_kp.cell(new_row, 3).value = row_data['购货单位']
-    ws_kp.cell(new_row, 4).value = row_data['部门']
-    ws_kp.cell(new_row, 5).value = row_data['业务员']
-    ws_kp.cell(new_row, 6).value = row_data['产品名称']
-    ws_kp.cell(new_row, 7).value = row_data['规格型号']
-    ws_kp.cell(new_row, 8).value = row_data['数量']
-    ws_kp.cell(new_row, 9).value = row_data['单位']
-    ws_kp.cell(new_row, 10).value = row_data['含税单价']
+    ws_kp.cell(new_row, 1).value = row_data[col_date]
+    ws_kp.cell(new_row, 2).value = row_data[col_ship]
+    ws_kp.cell(new_row, 3).value = row_data[col_customer]
+    ws_kp.cell(new_row, 4).value = row_data[col_dept]
+    ws_kp.cell(new_row, 5).value = row_data[col_sales]
+    ws_kp.cell(new_row, 6).value = row_data[col_product]
+    ws_kp.cell(new_row, 7).value = row_data[col_spec]
+    ws_kp.cell(new_row, 8).value = row_data[col_qty]
+    ws_kp.cell(new_row, 9).value = row_data[col_unit]
+    ws_kp.cell(new_row, 10).value = row_data[col_price]
     ws_kp.cell(new_row, 11).value = f'=H{new_row}*J{new_row}'
-    ws_kp.cell(new_row, 12).value = row_data['摘要']
-    ws_kp.cell(new_row, 13).value = row_data['客户订单号']
+    ws_kp.cell(new_row, 12).value = row_data[col_summary]
+    ws_kp.cell(new_row, 13).value = row_data[col_orderid]
 
     for col in range(1, 14):
         src_cell = ws_kp.cell(src_row_kp, col)
