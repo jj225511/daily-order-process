@@ -150,15 +150,15 @@ for idx, row_data in df_bk.iterrows():
         if src_cell.alignment:
             dst_cell.alignment = Alignment(horizontal=src_cell.alignment.horizontal, vertical=src_cell.alignment.vertical)
 
-    # 统一行高为24
-    ws_other.row_dimensions[new_row].height = 24
+    # 统一行高为27
+    ws_other.row_dimensions[new_row].height = 27
 
 print(f"    已追加 {len(df_bk)} 行")
 
-# 统一其他销售订单所有行高为24
+# 统一其他销售订单所有行高为27
 for row in range(1, ws_other.max_row + 1):
-    ws_other.row_dimensions[row].height = 24
-print(f"    已将所有行高设为24")
+    ws_other.row_dimensions[row].height = 27
+print(f"    已将所有行高设为27")
 
 # 7. 处理"开票销售订单" - 追加非BK数据
 print("\n[7] 处理'开票销售订单'工作表...")
@@ -202,15 +202,15 @@ for idx, row_data in df_other.iterrows():
         if src_cell.alignment:
             dst_cell.alignment = Alignment(horizontal=src_cell.alignment.horizontal, vertical=src_cell.alignment.vertical)
 
-    # 统一行高为24
-    ws_kp.row_dimensions[new_row].height = 24
+    # 统一行高为27
+    ws_kp.row_dimensions[new_row].height = 27
 
 print(f"    已追加 {len(df_other)} 行")
 
-# 统一开票销售订单所有行高为24
+# 统一开票销售订单所有行高为27
 for row in range(1, ws_kp.max_row + 1):
-    ws_kp.row_dimensions[row].height = 24
-print(f"    已将所有行高设为24")
+    ws_kp.row_dimensions[row].height = 27
+print(f"    已将所有行高设为27")
 
 # 8. 保存
 print("\n[8] 保存文件...")
