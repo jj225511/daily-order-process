@@ -11,7 +11,7 @@
 import pandas as pd
 from openpyxl import load_workbook
 from openpyxl.styles import Border, Side, Alignment, Font
-from datetime import datetime
+
 import os
 
 print("=" * 50)
@@ -97,17 +97,10 @@ for col in df.columns:
         df[col] = df[col].ffill().bfill()
 print(f"    空值填充完成 (M列'{col_orderid}'不填充)")
 
-# 3. 日期格式改为 YYYY/M/D
-print("\n[3] 转换日期格式为 YYYY/M/D...")
-def format_date(val):
-    if pd.isna(val):
-        return val
-    if isinstance(val, datetime):
-        return val.strftime('%Y/%m/%d')
-    return val
-
-df[col_date] = df[col_date].apply(format_date)
-print("    日期格式转换完成")
+# 3. 日期格式：保持为日期值，设置为 YYYY/M/D 显示格式
+print("\n[3] 处理日期格式（保持日期值，设置 YYYY/M/D 显示格式）...")
+df[col_date] = pd.to_datetime(df[col_date], errors='coerce')
+print("    日期格式处理完成（已转为日期值，支持筛选树分组）")
 
 # 4. 分离BK和非BK数据
 print("\n[4] 分离数据...")
@@ -133,7 +126,10 @@ src_row_other = last_row_other if last_row_other > 1 else 1
 
 for idx, row_data in df_bk.iterrows():
     new_row = last_row_other + 1 + df_bk.index.get_loc(idx)
-    ws_other.cell(new_row, 1).value = row_data[col_date]
+    # 日期列：保持日期值，设置为 YYYY/M/D 显示格式
+    date_cell = ws_other.cell(new_row, 1)
+    date_cell.value = row_data[col_date]
+    date_cell.number_format = 'YYYY/M/D'
     ws_other.cell(new_row, 2).value = row_data[col_ship]
     ws_other.cell(new_row, 3).value = row_data[col_customer]
     ws_other.cell(new_row, 4).value = row_data[col_dept]
@@ -180,7 +176,10 @@ border_style = sample_cell.border.left.style if sample_cell.border and sample_ce
 
 for idx, row_data in df_other.iterrows():
     new_row = last_row_kp + 1 + df_other.index.get_loc(idx)
-    ws_kp.cell(new_row, 1).value = row_data[col_date]
+    # 日期列：保持日期值，设置为 YYYY/M/D 显示格式
+    date_cell = ws_kp.cell(new_row, 1)
+    date_cell.value = row_data[col_date]
+    date_cell.number_format = 'YYYY/M/D'
     ws_kp.cell(new_row, 2).value = row_data[col_ship]
     ws_kp.cell(new_row, 3).value = row_data[col_customer]
     ws_kp.cell(new_row, 4).value = row_data[col_dept]
